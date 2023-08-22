@@ -2,6 +2,18 @@ plugins {
     id 'com.android.library'
     id 'maven-publish'   //添加maven publish插件
 }
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication){
+                from components.release
+                groupId = 'com.github.1djmao'
+                artifactId = 'release'
+                version = '1.0'
+            }
+        }
+    }
+}
 
 android {
     namespace 'com.idjmao.lib'
