@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="#cc000000"
     android:orientation="vertical">
 
@@ -16,10 +17,30 @@
             android:padding="10dp"
             android:textColor="@color/white"
             android:text="收起"/>
-        <View
+        <TextView
+            android:id="@+id/level_tv"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:padding="10dp"
+            android:drawablePadding="5dp"
+            android:drawableRight="@drawable/ic_span_down"
+            android:textColor="@color/white"
+            android:text="Verbose"/>
+
+        <TextView
+            android:id="@+id/tag_tv"
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:drawableRight="@drawable/ic_span_down"
+            android:padding="10dp"
+            android:lines="1"
+            android:textColor="@color/white"
+            android:text="TAG:" />
+
         <TextView
             android:id="@+id/clear_text"
             android:layout_width="wrap_content"

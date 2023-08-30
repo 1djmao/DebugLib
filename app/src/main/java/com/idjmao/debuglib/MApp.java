@@ -20,6 +20,13 @@ public class MApp extends Application implements Thread.UncaughtExceptionHandler
         Thread.setDefaultUncaughtExceptionHandler(this);
 
         TestClient.init(this);
+        TestClient.logTagList.add("Mytest");
+        TestClient.logTagList.add("aaa");
+        TestClient.logTagList.add("bbb");
+        TestClient.logTagList.add("ccc");
+        TestClient.logTagList.add("ddd");
+
+        TestClient.setDefLogTag("Mytest");
 
         TestClient.setDbName("aaaa.db");
 

@@ -1,17 +1,19 @@
 package com.idjmao.lib;
 
 import android.app.Service;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.provider.Settings;
+import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.Gravity;
@@ -20,20 +22,24 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.ListPopupWindow;
 
 import com.idjmao.lib.utils.DimenUtils;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class FloatWindowService extends Service {
 
-    WindowManager windowManager ;
+    WindowManager windowManager;
     View floatView;
     private static ScrollView textScroll;
     private static TextView textView;
@@ -46,21 +52,21 @@ public class FloatWindowService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M&&Settings.canDrawOverlays(this)) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
             addFloatingWindow();
             addFloatButton();
             hideFloatLayout();
-            handler=new Handler();
+            handler = new Handler();
 
-            watchLog();
+            watchLog(TestClient.getLogTag(),TestClient.getLogFilterLevel());
 
         }
         return super.onStartCommand(intent, flags, startId);
     }
 
 
-
-    private void watchLog(){
+    boolean stopWatchLog=false;
+    private void watchLog(String selectTag,String level) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -68,82 +74,172 @@ public class FloatWindowService extends Service {
                 BufferedReader reader = null;
                 try {
                     //获取logcat日志信息
-                    mLogcatProc = Runtime.getRuntime().exec(new String[] { "logcat","*:I" });
+                    mLogcatProc = Runtime.getRuntime().exec(new String[]{"logcat","-s","*:I"});
                     reader = new BufferedReader(new InputStreamReader(mLogcatProc.getInputStream()));
                     String line;
 
-                    String head="kkkkk";
-                    String logTag="";
+                    String head = "kkkkk";
+                    String logTag = "";
 
                     while ((line = reader.readLine()) != null) {
+//                        Log.i("kkkkkk", "run: line="+line);
 
-                        //logcat打印信息在这里可以监听到
-                        if (line.length()>37+logTag.length()){
-                            int logIndex=line.indexOf(":",37)+1;
-                            logTag=line.substring(37,logIndex);
+                        line=line.replaceAll("  "," ");
 
-                            if (!line.startsWith(head)){
-                                head=line.substring(0,37+logTag.length());
-                                appendStr(head,Color.RED);
+                        if (!line.startsWith(head)){
+                            String[] lines=line.split(" ");
+                            if (lines!=null&&lines.length>6){
+                                String date=lines[0];
+                                String time=lines[1];
+                                String progress=lines[2];
+                                String thread=lines[3];
+                                String level=lines[4];
+                                String tag=lines[5];
+
+                                int index=tag.indexOf(":");
+                                if (index>0){
+                                    logTag=tag.substring(0,index);
+                                }else {
+                                    logTag=tag;
+                                }
+
+                                head=line.substring(0,line.indexOf(logTag)+logTag.length());
+                                if (TextUtils.isEmpty(selectTag)||logTag.equals(selectTag)){
+                                    appendStr(head, Color.RED);
+                                }
                             }
-                            line=line.substring(37+logTag.length());
                         }
-                        appendStr(line);
+                        if (TextUtils.isEmpty(selectTag)||logTag.equals(selectTag)){
+                            int index=line.indexOf(":",head.length());
+                            if (index>0){
+                                appendStr(line.substring(index+1));
+                            }else {
+                                appendStr(line.substring(head.length()));
+                            }
+                        }
                     }
+
                 } catch (Exception e) {
                     e.printStackTrace();
+                }finally {
+                    mLogcatProc.destroy();
+                    if (reader!=null){
+                        try {
+                            reader.close();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
             }
         }).start();
     }
-
+    TextView levelTv;
+    TextView tagTv;
     private void addFloatingWindow() {
-            // 获取WindowManager服务
-            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        // 获取WindowManager服务
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-            // log 布局
-            floatView= LayoutInflater.from(this).inflate(R.layout.float_window,null,false);
-            textView=floatView.findViewById(R.id.log_text);
-            clearTv=floatView.findViewById(R.id.clear_text);
-            textScroll=floatView.findViewById(R.id.text_scroll);
-            TextView closeLayout=floatView.findViewById(R.id.close_text);
-            closeLayout.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    hideFloatLayout();
-                }
-            });
-            clearTv.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    textView.setText("");
-                }
-            });
+        // log 布局
+        floatView = LayoutInflater.from(this).inflate(R.layout.float_window, null, false);
+        textView = floatView.findViewById(R.id.log_text);
+        clearTv = floatView.findViewById(R.id.clear_text);
+        textScroll = floatView.findViewById(R.id.text_scroll);
+
+        levelTv=floatView.findViewById(R.id.level_tv);
+        tagTv=floatView.findViewById(R.id.tag_tv);
 
 
-            // 设置LayoutParam
-            WindowManager.LayoutParams windowLayoutParams = new WindowManager.LayoutParams();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
-            } else {
-                windowLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        TextView closeLayout = floatView.findViewById(R.id.close_text);
+        closeLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideFloatLayout();
             }
-            windowLayoutParams.format = PixelFormat.RGBA_8888;
-            windowLayoutParams.flags= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-            windowLayoutParams.gravity= Gravity.BOTTOM;
-            windowLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
-            windowLayoutParams.height = 1000;
-            windowLayoutParams.x = 0;
-            windowLayoutParams.y = 0;
+        });
+        clearTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                textView.setText("");
+            }
+        });
 
-            // 将悬浮窗控件添加到WindowManager
-            windowManager.addView(floatView, windowLayoutParams);
+        levelTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSelectLevelPopulWindow();
+            }
+        });
+        tagTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showSelectTagPopulWindow();
+            }
+        });
+
+
+        // 设置LayoutParam
+        WindowManager.LayoutParams windowLayoutParams = new WindowManager.LayoutParams();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            windowLayoutParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+        } else {
+            windowLayoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+        }
+        windowLayoutParams.format = PixelFormat.RGBA_8888;
+        windowLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        windowLayoutParams.gravity = Gravity.BOTTOM;
+        windowLayoutParams.width = WindowManager.LayoutParams.MATCH_PARENT;
+        windowLayoutParams.height = 1000;
+        windowLayoutParams.x = 0;
+        windowLayoutParams.y = 0;
+
+        // 将悬浮窗控件添加到WindowManager
+        windowManager.addView(floatView, windowLayoutParams);
 
     }
 
-    private void addFloatButton(){
+    private void showSelectLevelPopulWindow() {
+        final String[] list = getBaseContext().getResources().getStringArray(R.array.log_level);
+        final ListPopupWindow listPopupWindow;
+        listPopupWindow = new ListPopupWindow(this);
+        listPopupWindow.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, list));//用android内置布局，或设计自己的样式
+        listPopupWindow.setAnchorView(levelTv);//以哪个控件为基准，在该处以mEditText为基准
+        listPopupWindow.setModal(true);
+
+        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {//设置项点击监听
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                levelTv.setText(list[i]);//把选择的选项内容展示在EditText上
+                TestClient.setLogFilterLevel(list[i].substring(0,1));
+                listPopupWindow.dismiss();//如果已经选择了，隐藏起来
+            }
+        });
+        listPopupWindow.show();//把ListPopWindow展示出来
+        listPopupWindow.getListView().setBackgroundColor(Color.WHITE);
+    }
+    private void showSelectTagPopulWindow() {
+        final String[] list = TestClient.logTagList.toArray(new String[TestClient.logTagList.size()]);//要填充的数据
+        final ListPopupWindow listPopupWindow;
+        listPopupWindow = new ListPopupWindow(this);
+        listPopupWindow.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, list));//用android内置布局，或设计自己的样式
+        listPopupWindow.setAnchorView(tagTv);//以哪个控件为基准，在该处以mEditText为基准
+        listPopupWindow.setModal(true);
+
+        listPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {//设置项点击监听
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                tagTv.setText(list[i]);//把选择的选项内容展示在EditText上
+                TestClient.setDefLogTag(list[i]);
+                listPopupWindow.dismiss();//如果已经选择了，隐藏起来
+            }
+        });
+        listPopupWindow.show();//把ListPopWindow展示出来
+        listPopupWindow.getListView().setBackgroundColor(Color.WHITE);
+    }
+
+    private void addFloatButton() {
         //打开 log 按钮
-        floatBotton=new TextView(this);
+        floatBotton = new TextView(this);
         floatBotton.setBackgroundColor(Color.parseColor("#55000000"));
         floatBotton.setBackgroundResource(R.drawable.grey_radius_40);
 
@@ -161,58 +257,56 @@ public class FloatWindowService extends Service {
             layoutParams.type = WindowManager.LayoutParams.TYPE_PHONE;
         }
         layoutParams.format = PixelFormat.RGBA_8888;
-        layoutParams.width = DimenUtils.dip2px(getApplicationContext(),40);
-        layoutParams.height = DimenUtils.dip2px(getApplicationContext(),40);
+        layoutParams.width = DimenUtils.dip2px(getApplicationContext(), 40);
+        layoutParams.height = DimenUtils.dip2px(getApplicationContext(), 40);
         layoutParams.x = 30;
         layoutParams.y = 300;
-        layoutParams.gravity=Gravity.RIGHT|Gravity.BOTTOM;
-        layoutParams.flags= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        layoutParams.gravity = Gravity.RIGHT | Gravity.BOTTOM;
+        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 
         // 将悬浮窗控件添加到WindowManager
         windowManager.addView(floatBotton, layoutParams);
         floatBotton.setOnTouchListener(new FloatingOnTouchListener());
     }
 
-    private void showFloatLayout(){
+    private void showFloatLayout() {
         floatView.setVisibility(View.VISIBLE);
         floatBotton.setVisibility(View.GONE);
     }
 
-    private void hideFloatLayout(){
+    private void hideFloatLayout() {
         floatView.setVisibility(View.GONE);
         floatBotton.setVisibility(View.VISIBLE);
     }
 
     private static Handler handler;
 
-    public static void appendStr(String text){
-        appendStr(text,Color.WHITE);
+    public static void appendStr(String text) {
+        appendStr(text, Color.WHITE);
     }
 
-    public static void appendStr(String text,int color){
-        if (textView!=null){
+    public static void appendStr(String text, int color) {
+        if (textView != null) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
 
-                    SpannableStringBuilder stringBuilder=new SpannableStringBuilder("\n"+text);
-                    stringBuilder.setSpan(new ForegroundColorSpan(color),0,text.length(),Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder("\n" + text);
+                    stringBuilder.setSpan(new ForegroundColorSpan(color), 0, text.length(), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
 
                     textView.append(stringBuilder);
                     if (textView.getMeasuredHeight() <= (textScroll.getScrollY() + textScroll.getHeight())) {
                         textScroll.postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                textScroll.scrollTo(0,textView.getMeasuredHeight()-textScroll.getHeight());
+                                textScroll.scrollTo(0, textView.getMeasuredHeight() - textScroll.getHeight());
                             }
-                        },100);
+                        }, 100);
                     }
                 }
             });
         }
     }
-
-
 
 
     @Override
@@ -224,16 +318,16 @@ public class FloatWindowService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        textView=null;
-        textScroll=null;
-        handler=null;
+        textView = null;
+        textScroll = null;
+        handler = null;
     }
 
     private class FloatingOnTouchListener implements View.OnTouchListener {
         private int x;
         private int y;
 
-        boolean move=false;
+        boolean move = false;
 
         @Override
         public boolean onTouch(View view, MotionEvent event) {
@@ -247,25 +341,25 @@ public class FloatWindowService extends Service {
                     int nowY = (int) event.getRawY();
                     int movedX = nowX - x;
                     int movedY = nowY - y;
-                    if (movedX<30&&movedY<30&&!move){
+                    if (movedX < 30 && movedY < 30 && !move) {
                         return false;
                     }
                     x = nowX;
                     y = nowY;
-                    WindowManager.LayoutParams layoutParams= (WindowManager.LayoutParams) view.getLayoutParams();
+                    WindowManager.LayoutParams layoutParams = (WindowManager.LayoutParams) view.getLayoutParams();
                     layoutParams.x = layoutParams.x - movedX;
                     layoutParams.y = layoutParams.y - movedY;
 
                     // 更新悬浮窗控件布局
                     windowManager.updateViewLayout(view, layoutParams);
-                    move=true;
+                    move = true;
                     break;
-                    case MotionEvent.ACTION_UP:
-                        if (move){
-                            move=false;
-                            return true;
-                        }
-                        break;
+                case MotionEvent.ACTION_UP:
+                    if (move) {
+                        move = false;
+                        return true;
+                    }
+                    break;
                 default:
                     break;
             }

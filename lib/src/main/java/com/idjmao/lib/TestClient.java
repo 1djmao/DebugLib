@@ -27,6 +27,11 @@ public class TestClient {
 
     private static final String TEST_LIB_SP="testLib";
     private static Application app;
+
+    private static String logFilterLevel="V";
+    private static String defLogTag="";
+    public static List<String> logTagList=new ArrayList<>();
+
     private static List<String> spNameList =new ArrayList<>();
 
     private static String dbName;
@@ -144,5 +149,21 @@ public class TestClient {
 
     public static List<String> getDirNameList() {
         return dirNameList;
+    }
+
+    public static String getLogTag(){
+        return defLogTag;
+    }
+
+    public static void setDefLogTag(String defLogTag) {
+        TestClient.defLogTag = defLogTag;
+    }
+
+    public static String getLogFilterLevel() {
+        return logFilterLevel;
+    }
+
+    public static void setLogFilterLevel(String logFilterLevel) {
+        TestClient.logFilterLevel = logFilterLevel;
     }
 }
