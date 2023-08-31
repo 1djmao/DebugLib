@@ -36,6 +36,9 @@ import com.idjmao.lib.utils.DimenUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class FloatWindowService extends Service {
 
@@ -58,7 +61,7 @@ public class FloatWindowService extends Service {
             hideFloatLayout();
             handler = new Handler();
 
-            watchLog(TestClient.getLogTag(),TestClient.getLogFilterLevel());
+            watchLog(TestClient.getLogFilterLevel());
 
         }
         return super.onStartCommand(intent, flags, startId);
@@ -66,7 +69,7 @@ public class FloatWindowService extends Service {
 
 
     boolean stopWatchLog=false;
-    private void watchLog(String selectTag,String level) {
+    private void watchLog(String level) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -74,7 +77,7 @@ public class FloatWindowService extends Service {
                 BufferedReader reader = null;
                 try {
                     //获取logcat日志信息
-                    mLogcatProc = Runtime.getRuntime().exec(new String[]{"logcat","-s","*:I"});
+                    mLogcatProc = Runtime.getRuntime().exec(new String[]{"logcat","-s","*:V"});
                     reader = new BufferedReader(new InputStreamReader(mLogcatProc.getInputStream()));
                     String line;
 
@@ -96,6 +99,10 @@ public class FloatWindowService extends Service {
                                 String level=lines[4];
                                 String tag=lines[5];
 
+                                if (!logLevelEnable(level)){
+                                    continue;
+                                }
+
                                 int index=tag.indexOf(":");
                                 if (index>0){
                                     logTag=tag.substring(0,index);
@@ -104,12 +111,12 @@ public class FloatWindowService extends Service {
                                 }
 
                                 head=line.substring(0,line.indexOf(logTag)+logTag.length());
-                                if (TextUtils.isEmpty(selectTag)||logTag.equals(selectTag)){
+                                if (TextUtils.isEmpty(TestClient.getLogTag())||logTag.equals(TestClient.getLogTag())){
                                     appendStr(head, Color.RED);
                                 }
                             }
                         }
-                        if (TextUtils.isEmpty(selectTag)||logTag.equals(selectTag)){
+                        if (TextUtils.isEmpty(TestClient.getLogTag())||logTag.equals(TestClient.getLogTag())){
                             int index=line.indexOf(":",head.length());
                             if (index>0){
                                 appendStr(line.substring(index+1));
@@ -134,6 +141,32 @@ public class FloatWindowService extends Service {
             }
         }).start();
     }
+
+    private boolean logLevelEnable(String level){
+        List<String> levels=new ArrayList<>();
+        switch (TestClient.getLogFilterLevel()){
+            case "V":
+                Collections.addAll(levels, new String[]{"V", "D", "I", "W", "E"});
+                return levels.contains(level);
+
+            case "D":
+                Collections.addAll(levels, new String[]{ "D", "I", "W", "E"});
+                return levels.contains(level);
+
+            case "I":
+                Collections.addAll(levels, new String[]{ "I", "W", "E"});
+                return levels.contains(level);
+
+            case "W":
+                Collections.addAll(levels, new String[]{ "W", "E"});
+                return levels.contains(level);
+
+            case "E":
+                return level.equals("E");
+        }
+
+        return false;
+    }
     TextView levelTv;
     TextView tagTv;
     private void addFloatingWindow() {
@@ -148,6 +181,9 @@ public class FloatWindowService extends Service {
 
         levelTv=floatView.findViewById(R.id.level_tv);
         tagTv=floatView.findViewById(R.id.tag_tv);
+
+        levelTv.setText(TestClient.getLogFilterLevel());
+        tagTv.setText(TestClient.getLogTag());
 
 
         TextView closeLayout = floatView.findViewById(R.id.close_text);
@@ -283,6 +319,7 @@ public class FloatWindowService extends Service {
 
     public static void appendStr(String text) {
         appendStr(text, Color.WHITE);
+//        textView.append(new SpannableStringBuilder("\n" + text));
     }
 
     public static void appendStr(String text, int color) {
@@ -291,8 +328,8 @@ public class FloatWindowService extends Service {
                 @Override
                 public void run() {
 
-                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder("\n" + text);
-                    stringBuilder.setSpan(new ForegroundColorSpan(color), 0, text.length(), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+                    SpannableStringBuilder stringBuilder = new SpannableStringBuilder("\n" + text+" ");
+                    stringBuilder.setSpan(new ForegroundColorSpan(color), 0, text.length()+1, Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
 
                     textView.append(stringBuilder);
                     if (textView.getMeasuredHeight() <= (textScroll.getScrollY() + textScroll.getHeight())) {

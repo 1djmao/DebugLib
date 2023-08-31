@@ -2,11 +2,11 @@
     <string name="app_name">lib</string>
 
     <string-array name="log_level">
-        <item>Verbose</item>
-        <item>Debug</item>
-        <item>Info</item>
-        <item>Warn</item>
-        <item>Error</item>
+        <item>V</item>
+        <item>D</item>
+        <item>I</item>
+        <item>W</item>
+        <item>E</item>
     </string-array>
 
 </resources>

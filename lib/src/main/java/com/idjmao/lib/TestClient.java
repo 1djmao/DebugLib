@@ -41,6 +41,10 @@ public class TestClient {
 
     public static void init(Application app){
         TestClient.app=app;
+        logTagList=new ArrayList<>();
+        logTagList.add("");
+
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             //读取 sp 文件夹下的文件自动加入 sp列表
             File spDir=new File(app.getDataDir().getPath()+"/shared_prefs");

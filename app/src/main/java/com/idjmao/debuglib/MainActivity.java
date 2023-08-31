@@ -18,13 +18,17 @@ public class MainActivity extends AppCompatActivity {
 
         TestClient.checkError(this);
 
-        new CountDownTimer(10000,1000){
+        new CountDownTimer(100000,1000){
             @Override
             public void onTick(long millisUntilFinished) {
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
 //                        FloatWindowService.appendStr("日志更新 "+millisUntilFinished, Color.RED);
+                        Log.v("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
+                        Log.d("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
+                        Log.i("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
+                        Log.w("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
                         Log.e("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
                         Log.e("Mytest6666", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
 

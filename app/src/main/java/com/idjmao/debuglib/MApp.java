@@ -21,6 +21,7 @@ public class MApp extends Application implements Thread.UncaughtExceptionHandler
 
         TestClient.init(this);
         TestClient.logTagList.add("Mytest");
+        TestClient.logTagList.add("Mytest6666");
         TestClient.logTagList.add("aaa");
         TestClient.logTagList.add("bbb");
         TestClient.logTagList.add("ccc");

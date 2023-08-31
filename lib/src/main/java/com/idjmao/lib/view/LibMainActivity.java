@@ -4,6 +4,8 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -14,6 +16,8 @@ import android.view.View;
 
 import com.idjmao.lib.FloatWindowService;
 import com.idjmao.lib.R;
+
+import java.util.List;
 
 public class LibMainActivity extends AppCompatActivity {
 
@@ -38,7 +42,7 @@ public class LibMainActivity extends AppCompatActivity {
                 }
             });
             builder.create().show();
-        }else {
+        }else if (!isServiceRunning(this,FloatWindowService.class)){
             startService(new Intent(this, FloatWindowService.class));
         }
 
@@ -55,4 +59,26 @@ public class LibMainActivity extends AppCompatActivity {
     public void showFilesClick(View view) {
         startActivity(new Intent(this,DirListActivity.class));
     }
+
+    /**
+     * 判断Service是否正在运行
+     *
+     * @param context     上下文
+     * @param serviceClass Service 类
+     * @return true 表示正在运行，false 表示没有运行
+     */
+    public static boolean isServiceRunning(Context context, Class serviceClass) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.RunningServiceInfo> serviceInfoList = manager.getRunningServices(200);
+        if (serviceInfoList.size() <= 0) {
+            return false;
+        }
+        for (ActivityManager.RunningServiceInfo info : serviceInfoList) {
+            if (info.service.getClassName().equals(serviceClass.getName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }
