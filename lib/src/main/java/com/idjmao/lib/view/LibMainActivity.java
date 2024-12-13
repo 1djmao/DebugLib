@@ -42,10 +42,35 @@ public class LibMainActivity extends AppCompatActivity {
                 }
             });
             builder.create().show();
-        }else if (!isServiceRunning(this,FloatWindowService.class)){
-            startService(new Intent(this, FloatWindowService.class));
+        }else if (isServiceRunning(this,FloatWindowService.class)){
+            stopService(new Intent(this, FloatWindowService.class));
+        }else {
+            Intent intent=new Intent(this, FloatWindowService.class);
+            intent.putExtra("interfaceModel",false);
+            startService(intent);
         }
 
+    }
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void showNetLogClick(View view) {
+        if (!Settings.canDrawOverlays(this)) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("请打开本应用的悬浮窗权限");
+            builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    startActivityForResult(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName())), FLOAT_WINDOW_REQUEST);
+                }
+            });
+            builder.create().show();
+        }else if (isServiceRunning(this,FloatWindowService.class)){
+            stopService(new Intent(this, FloatWindowService.class));
+        }else {
+            Intent intent=new Intent(this, FloatWindowService.class);
+            intent.putExtra("interfaceModel",true);
+            startService(intent);
+        }
     }
 
     public void showSPClick(View view) {
@@ -80,5 +105,6 @@ public class LibMainActivity extends AppCompatActivity {
         }
         return false;
     }
+
 
 }

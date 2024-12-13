@@ -42,6 +42,9 @@ import java.util.List;
 
 public class FloatWindowService extends Service {
 
+    private static boolean isRunning=false;
+    boolean interfaceModel=false;
+
     WindowManager windowManager;
     View floatView;
     private static ScrollView textScroll;
@@ -55,13 +58,17 @@ public class FloatWindowService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        interfaceModel=intent.getBooleanExtra("interfaceModel",false);
+        isRunning=true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
             addFloatingWindow();
             addFloatButton();
             hideFloatLayout();
             handler = new Handler();
 
-            watchLog(TestClient.getLogFilterLevel());
+            if (!interfaceModel){
+                watchLog(TestClient.getLogFilterLevel());
+            }
 
         }
         return super.onStartCommand(intent, flags, startId);
@@ -200,6 +207,11 @@ public class FloatWindowService extends Service {
             }
         });
 
+        if (interfaceModel){
+            levelTv.setVisibility(View.INVISIBLE);
+            tagTv.setVisibility(View.INVISIBLE);
+        }
+
         levelTv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -317,12 +329,16 @@ public class FloatWindowService extends Service {
 
     private static Handler handler;
 
-    public static void appendStr(String text) {
+    protected static void appendStr(String text) {
         appendStr(text, Color.WHITE);
 //        textView.append(new SpannableStringBuilder("\n" + text));
     }
 
-    public static void appendStr(String text, int color) {
+
+    protected static void appendStr(String text, int color) {
+        if (!isRunning){
+            return;
+        }
         if (textView != null) {
             handler.post(new Runnable() {
                 @Override
@@ -354,10 +370,17 @@ public class FloatWindowService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        isRunning=false;
+        try {
+            windowManager.removeView(floatBotton);
+        }catch (Exception e){}
+        try {
+            windowManager.removeView(floatView);
+        }catch (Exception e){}
         textView = null;
         textScroll = null;
         handler = null;
+        super.onDestroy();
     }
 
     private class FloatingOnTouchListener implements View.OnTouchListener {

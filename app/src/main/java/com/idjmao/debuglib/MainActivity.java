@@ -2,11 +2,13 @@ package com.idjmao.debuglib;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 
+import com.idjmao.lib.FloatWindowService;
 import com.idjmao.lib.TestClient;
 
 public class MainActivity extends AppCompatActivity {
@@ -31,6 +33,10 @@ public class MainActivity extends AppCompatActivity {
                         Log.w("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
                         Log.e("Mytest", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
                         Log.e("Mytest6666", "this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服");
+
+
+                        TestClient.addLog("this is a test"+millisUntilFinished+"\n啊辣椒粉拉风\n加客服", Color.BLUE);
+
 
                     }
                 }).start();

@@ -15,6 +15,11 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:onClick="showNetLogClick"
+        android:text="显示接口日志"/>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:onClick="showSPClick"
         android:text="显示SP"/>
     <Button

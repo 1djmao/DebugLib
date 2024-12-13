@@ -75,6 +75,14 @@ public class TestClient {
 
     }
 
+    public static void addLog(String text){
+        FloatWindowService.appendStr(text);
+    }
+    public static void addLog(String text,int color){
+        FloatWindowService.appendStr(text,color);
+    }
+
+
     public static void startTestActivity(Activity activity){
         activity.startActivity(new Intent(app, LibMainActivity.class));
     }
