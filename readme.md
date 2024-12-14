@@ -27,7 +27,6 @@ TestClient.setDbName("aaaa.db");
 在需要显示日志的地方调用
 
 ```
-dependencies {
-	        implementation 'com.github.1djmao:DebugLib:Tag'
-	}
+TestClient.addLog(message);
+TestClient.addLog(message,Color.RED);
 ```
